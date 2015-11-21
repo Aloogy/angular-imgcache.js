@@ -35,7 +35,9 @@ angular.module('ImgCache', [])
 
 })
 
-.directive('imgCache', ['ImgCache', function() {
+.directive('imgCache', ['ImgCache', '$q', function(ImgCache, $q) {
+
+    var cacheLock = {};
 
     return {
         restrict: 'A',
@@ -55,30 +57,52 @@ angular.module('ImgCache', [])
                         el.attr('src', dest);
                     }
                 });
-            }
+            };
 
             var loadImg = function(type, el, src) {
+                // serialize images of the same src
+                if (!angular.isDefined(cacheLock[src])) {
+                    console.log('Adding $q to serialize imgcache for: ' + src);
+                    var defer = $q.defer();
+                    cacheLock[src] = defer.promise;
 
-                ImgCache.$promise.then(function() {
+                    var clearLock = function(src) {
+                        defer.resolve(src);
+                        delete cacheLock[src];
+                        console.log('Clearing $q in imgcache for: ' + src);
+                    }
 
-                    ImgCache.isCached(src, function(path, success) {
-
-                        if (success) {
-                            setImg(type, el, src);
-                        } else {
-                            ImgCache.cacheFile(src, function() {
-                                setImg(type, el, src);
+                    ImgCache.$promise.then(
+                        function() {
+                            ImgCache.isCached(src, function(path, success) {
+                                if (success) {
+                                    setImg(type, el, src);
+                                    clearLock(src);
+                                } else {
+                                    ImgCache.cacheFile(src, function() {
+                                        setImg(type, el, src);
+                                        clearLock(src);
+                                    });
+                                }
                             });
+                        },
+                        function() {
+                            clearLock(src);
                         }
+                    );
 
+                } else {
+                    cacheLock[src].then(function(src) {
+                        setImg(type, el, src);
                     });
-                });
-            }
+                }
+
+            };
 
             attrs.$observe('icSrc', function(src) {
                 if (src)
                     loadImg('src', el, src);
-                else 
+                else
                     console.log('catched bad src: ' + src);
 
             });
