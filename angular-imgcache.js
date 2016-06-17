@@ -9,17 +9,17 @@ angular.module('ImgCache', [])
         }, function() {
             ImgCache.$deferred.reject();
         });
-    }
+    };
 
     this.manualInit = false;
 
     this.setOptions = function(options) {
         angular.extend(ImgCache.options, options);
-    }
+    };
 
     this.setOption = function(name, value) {
         ImgCache.options[name] = value;
-    }
+    };
 
     this.$get = ['$q', function ($q) {
 
@@ -58,15 +58,13 @@ angular.module('ImgCache', [])
             var loadImg = function(type, el, src) {
                 // serialize images of the same src
                 if (!angular.isDefined(cacheLock[src])) {
-                    console.log('Adding $q to serialize imgcache for: ' + src);
                     var defer = $q.defer();
                     cacheLock[src] = defer.promise;
 
                     var clearLock = function(src) {
                         defer.resolve(src);
                         delete cacheLock[src];
-                        console.log('Clearing $q in imgcache for: ' + src);
-                    }
+                    };
 
                     ImgCache.$promise.then(
                         function() {
@@ -96,18 +94,15 @@ angular.module('ImgCache', [])
             };
 
             attrs.$observe('icSrc', function(src) {
-                if (src)
+                if (src) {
                     loadImg('src', el, src);
-                else
-                    console.log('catched bad src: ' + src);
-
+                }
             });
 
             attrs.$observe('icBg', function(src) {
-                if (src)
+                if (src) {
                     loadImg('bg', el, src);
-                else 
-                    console.log('catched bad src: ' + src);
+                }
             });
 
         }
